@@ -47,8 +47,12 @@ var loadChecks = function(checksfile) {
     return JSON.parse(fs.readFileSync(checksfile));
 };
 
-var checkHtmlFile = function(htmlfile, checksfile) {
-    $ = cheerioHtmlFile(htmlfile);
+var checkHtmlFile = function(htmlfile, htmlurl,  checksfile) {
+    loadFileOrUrl(htmlfile, htmlurl, checksfile);
+};
+
+var doCheckHtmlFile = function(htmldata, checksfile) {
+    $ = cheerioHtmlFile(htmldata);
     var checks = loadChecks(checksfile).sort();
     var out = {};
     for(var ii in checks) {
@@ -64,16 +68,16 @@ var clone = function(fn) {
     return fn.bind({});
 };
 
-var loadFileOrUrl = function(filePath, fileUrl) {
-    if (filePath != null) {
-	var data = fs.readFileSync(filePath);
-	var checkJson = checkHtmlFile(data, program.checks);
+var loadFileOrUrl = function(htmlfile, htmlurl, checksfile) {
+    if (htmlfile != null) {
+	var data = fs.readFileSync(htmlfile);
+	var checkJson = doCheckHtmlFile(data, checksfile);
 	var outJson = JSON.stringify(checkJson, null, 4);
 	console.log(outJson);
     }
     else {
-	rest.get(fileUrl).on('complete', function(data) {
-	    var checkJson = checkHtmlFile(data, program.checks);
+	rest.get(htmlurl).on('complete', function(data) {
+	    var checkJson = doCheckHtmlFile(data, checksfile);
 	    var outJson = JSON.stringify(checkJson, null, 4);
 	    console.log(outJson);
 	});
@@ -86,7 +90,7 @@ if(require.main == module) {
         .option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists))
         .option('-u, --url <url>', 'URL of index.html')
         .parse(process.argv);
-    loadFileOrUrl(program.file, program.url);
+    checkHtmlFile(program.file, program.url, program.checks);
 } else {
     exports.checkHtmlFile = checkHtmlFile;
 }
